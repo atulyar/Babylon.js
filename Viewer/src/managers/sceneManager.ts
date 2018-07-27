@@ -898,13 +898,25 @@ export class SceneManager {
             }
         };
 
-        const sceneExtends = this.scene.getWorldExtends((mesh) => {
-            return !this.environmentHelper || (mesh !== this.environmentHelper.ground && mesh !== this.environmentHelper.rootMesh && mesh !== this.environmentHelper.skybox);
-        });
-        const sceneDiagonal = sceneExtends.max.subtract(sceneExtends.min);
-        const sceneDiagonalLength = sceneDiagonal.length();
+        // const sceneExtends = this.scene.getWorldExtends((mesh) => {
+        //     return !this.environmentHelper || (mesh !== this.environmentHelper.ground && mesh !== this.environmentHelper.rootMesh && mesh !== this.environmentHelper.skybox);
+        // });
+        // const sceneDiagonal = sceneExtends.max.subtract(sceneExtends.min);
+        // const sceneDiagonalLength = sceneDiagonal.length();
+        
+        var sceneDiagonalLength;
+        if (this.models[0]) {
+            const boundingInfo = this.models[0].rootMesh.getHierarchyBoundingVectors(true);
+            const sizeVec = boundingInfo.max.subtract(boundingInfo.min);
+            sceneDiagonalLength = sizeVec.length();
+        } else {
+            sceneDiagonalLength = 2.5;
+        }
+        
+
         if (isFinite(sceneDiagonalLength)) {
             this.camera.upperRadiusLimit = sceneDiagonalLength * 4;
+            console.log("upperRadiusLimit set in _configureCamera: " + this.camera.upperRadiusLimit);
         }
 
         // sanity check!
@@ -934,9 +946,10 @@ export class SceneManager {
         this.camera.radius = (this._globalConfiguration.camera && this._globalConfiguration.camera.radius) || this.camera.radius;
 
         const sceneDiagonalLenght = sizeVec.length();
-        if (isFinite(sceneDiagonalLenght))
+        if (isFinite(sceneDiagonalLenght)) {
             this.camera.upperRadiusLimit = sceneDiagonalLenght * 4;
-
+            console.log("upperRadiusLimit set in _focusOnModel: " + this.camera.upperRadiusLimit);
+        }
         if (this._configurationContainer.configuration)
             this._configureEnvironment(this._configurationContainer.configuration.skybox, this._configurationContainer.configuration.ground);
         /*this.scene.lights.filter(light => light instanceof ShadowLight).forEach(light => {

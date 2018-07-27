@@ -270,6 +270,7 @@ export abstract class AbstractViewer {
         }
 
         if (this.sceneManager.vrHelper && !this.sceneManager.vrHelper.isInVRMode) {
+            this._vrToggled = true;
             // make sure the floor is set
             if (this.sceneManager.environmentHelper && this.sceneManager.environmentHelper.ground) {
                 this.sceneManager.vrHelper.addFloorMesh(this.sceneManager.environmentHelper.ground);
@@ -295,6 +296,11 @@ export abstract class AbstractViewer {
                         this._vrModelRepositioning = 0;
                     }
                 }
+
+                const boundingInfo = this.sceneManager.models[0].rootMesh.getHierarchyBoundingVectors(true);
+                const sizeVec = boundingInfo.max.subtract(boundingInfo.min);
+                const sceneDiagonalLength = sizeVec.length();
+                console.log("sceneDiagonalLength before upscaling: " + sceneDiagonalLength);
 
                 // scale the model
                 if (this.sceneManager.models.length) {
@@ -338,28 +344,38 @@ export abstract class AbstractViewer {
 
         if (this.sceneManager.vrHelper) {
             this.sceneManager.vrHelper.onExitingVR.add(() => {
-                // undo the scaling of the model
-                if (this.sceneManager.models.length) {
-                    this.sceneManager.models[0].rootMesh.scaling.scaleInPlace(1 / this._vrScale);
-                    this.sceneManager.models[0].rootMesh.position.y -= this._vrModelRepositioning;
-                }
+                if (this._vrToggled) {
+                    console.log("Downscaling");
+                    // undo the scaling of the model
+                    if (this.sceneManager.models.length) {
+                        this.sceneManager.models[0].rootMesh.scaling.scaleInPlace(1 / this._vrScale);
+                        this.sceneManager.models[0].rootMesh.position.y -= this._vrModelRepositioning;
+                    }
 
-                // undo the scaling of the environment
-                if (this.sceneManager.environmentHelper) {
-                    this.sceneManager.environmentHelper.ground && this.sceneManager.environmentHelper.ground.scaling.scaleInPlace(1 / this._vrScale);
-                    this.sceneManager.environmentHelper.skybox && this.sceneManager.environmentHelper.skybox.scaling.scaleInPlace(1 / this._vrScale);
-                }
+                    // undo the scaling of the environment
+                    if (this.sceneManager.environmentHelper) {
+                        this.sceneManager.environmentHelper.ground && this.sceneManager.environmentHelper.ground.scaling.scaleInPlace(1 / this._vrScale);
+                        this.sceneManager.environmentHelper.skybox && this.sceneManager.environmentHelper.skybox.scaling.scaleInPlace(1 / this._vrScale);
+                    }
 
-                // post processing
-                if (this.sceneManager.defaultRenderingPipelineEnabled && this.sceneManager.defaultRenderingPipeline) {
-                    this.sceneManager.defaultRenderingPipeline.imageProcessingEnabled = true;
-                    this.sceneManager.defaultRenderingPipeline.prepare();
-                }
+                    // post processing
+                    if (this.sceneManager.defaultRenderingPipelineEnabled && this.sceneManager.defaultRenderingPipeline) {
+                        this.sceneManager.defaultRenderingPipeline.imageProcessingEnabled = true;
+                        this.sceneManager.defaultRenderingPipeline.prepare();
+                    }
 
-                // clear set height and eidth
-                this.canvas.removeAttribute("height");
-                this.canvas.removeAttribute("width");
-                this.engine.resize();
+                    // clear set height and eidth
+                    this.canvas.removeAttribute("height");
+                    this.canvas.removeAttribute("width");
+                    this.engine.resize();
+
+                    this._vrToggled = false;
+
+                    const boundingInfo = this.sceneManager.models[0].rootMesh.getHierarchyBoundingVectors(true);
+                    const sizeVec = boundingInfo.max.subtract(boundingInfo.min);
+                    const sceneDiagonalLength = sizeVec.length();
+                    console.log("sceneDiagonalLength after downscaling: " + sceneDiagonalLength);
+                }
             })
         }
 
